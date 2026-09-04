@@ -584,6 +584,10 @@ kbd {
 
 .category-action,
 .category-delete {
+  display: block;
+  width: 30px;
+  height: 38px;
+  line-height: 1;
   opacity: 1;
 }
 
