@@ -145,8 +145,14 @@ function loadNotes() {
 }
 
 function saveNotes() {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(state.notes));
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(state.notes));
+  } catch {
+    window.alert("笔记保存失败：图片或数据过大。请删除部分图片后重试。");
+    return false;
+  }
   syncToFolder();
+  return true;
 }
 
 function loadTags(notes = []) {
@@ -690,14 +696,23 @@ function renderImagePreviews() {
 function addNoteImages(event) {
   const files = [...event.target.files];
   files.forEach((file) => {
-    if (file.size > 5 * 1024 * 1024) {
-      window.alert(`图片“${file.name}”超过 5MB，已跳过。`);
+    if (file.size > 20 * 1024 * 1024) {
+      window.alert(`图片“${file.name}”超过 20MB，已跳过。`);
       return;
     }
     const reader = new FileReader();
     reader.onload = () => {
-      composerImages.push({ name: file.name, type: file.type, data: reader.result });
-      renderImagePreviews();
+      const source = new Image();
+      source.onload = () => {
+        const scale = Math.min(1, 2400 / Math.max(source.naturalWidth, source.naturalHeight));
+        const canvas = document.createElement("canvas");
+        canvas.width = Math.max(1, Math.round(source.naturalWidth * scale));
+        canvas.height = Math.max(1, Math.round(source.naturalHeight * scale));
+        canvas.getContext("2d").drawImage(source, 0, 0, canvas.width, canvas.height);
+        composerImages.push({ name: file.name, type: "image/jpeg", data: canvas.toDataURL("image/jpeg", 0.85) });
+        renderImagePreviews();
+      };
+      source.src = reader.result;
     };
     reader.readAsDataURL(file);
   });
@@ -733,7 +748,9 @@ function submitNote(event) {
   }
 
   state.customTags = dedupeTags([...state.customTags, ...note.tags]);
-  saveNotes();
+  if (!saveNotes()) {
+    return;
+  }
   saveTags();
   render();
   closeModal(elements.composerModal);
