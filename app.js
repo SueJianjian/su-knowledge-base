@@ -338,7 +338,7 @@ function renderCategories() {
         <span class="category-name">${escapeHTML(category.label)}</span>
         <span class="category-count">${String(count).padStart(2, "0")}</span>
         </button>
-        ${category.id !== "全部" ? `<button class="category-delete" type="button" data-category-delete="${escapeHTML(category.id)}" aria-label="删除分类 ${escapeHTML(category.label)}" title="删除">删</button>` : ""}
+        ${category.id !== "全部" ? `<button class="category-action" type="button" data-category-rename="${escapeHTML(category.id)}" aria-label="重命名分类 ${escapeHTML(category.label)}" title="重命名">改</button><button class="category-delete" type="button" data-category-delete="${escapeHTML(category.id)}" aria-label="删除分类 ${escapeHTML(category.label)}" title="删除">删</button>` : ""}
       </div>
     `;
   }).join("");
@@ -353,6 +353,7 @@ function renderCustomCategories() {
           <span class="category-symbol" style="--category-color: ${category.color}">${category.symbol}</span>
           <span>${escapeHTML(category.label)}</span>
         </button>
+        <button class="managed-tag-action" type="button" data-category-rename="${escapeHTML(category.id)}" aria-label="重命名分类 ${escapeHTML(category.label)}" title="重命名">改</button>
         <button class="managed-tag-action danger" type="button" data-category-delete="${escapeHTML(category.id)}" aria-label="删除分类 ${escapeHTML(category.label)}" title="删除">删</button>
       </div>
     `).join("")
@@ -807,6 +808,12 @@ function bindEvents() {
       return;
     }
 
+    const categoryRenameButton = event.target.closest("[data-category-rename]");
+    if (categoryRenameButton) {
+      renameCategory(categoryRenameButton.dataset.categoryRename);
+      return;
+    }
+
     const managedTagButton = event.target.closest("[data-tag-value]");
     if (managedTagButton && managedTagButton.closest(".managed-tag-item")) {
       const tag = managedTagButton.dataset.tagValue;
@@ -899,6 +906,24 @@ function deleteCustomCategory(categoryId) {
   saveCategories();
   saveHiddenCategories();
   saveNotes();
+  render();
+}
+
+function renameCategory(categoryId) {
+  const category = getAllCategories().find((item) => item.id === categoryId);
+  if (!category) return;
+  const nextLabel = normalizeCategory(window.prompt(`请输入“${category.label}”的新名称`, category.label) || "");
+  if (!nextLabel || nextLabel === category.label) return;
+  if (getAllCategories().some((item) => item.id !== categoryId && item.label === nextLabel)) {
+    window.alert("分类名称已经存在。");
+    return;
+  }
+  if (category.id.startsWith("custom-")) {
+    state.customCategories = state.customCategories.map((item) => item.id === categoryId ? { ...item, label: nextLabel } : item);
+    saveCategories();
+  } else {
+    category.label = nextLabel;
+  }
   render();
 }
 

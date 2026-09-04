@@ -563,6 +563,22 @@ kbd {
   transition: opacity 160ms ease, background 160ms ease;
 }
 
+.category-action {
+  flex: 0 0 24px;
+  padding: 6px 0;
+  border: 1px solid rgba(217, 255, 94, 0.2);
+  color: var(--acid);
+  background: transparent;
+  font-family: var(--mono);
+  font-size: 9px;
+  opacity: 0;
+}
+
+.category-row:hover .category-action,
+.category-action:focus-visible {
+  opacity: 1;
+}
+
 .category-row:hover .category-delete,
 .category-delete:focus-visible {
   opacity: 1;
