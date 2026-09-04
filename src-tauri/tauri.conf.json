@@ -1,0 +1,27 @@
+{
+  "$schema": "https://schema.tauri.app/config/2",
+  "productName": "Su 个人知识库",
+  "version": "1.0.0",
+  "identifier": "com.su.knowledgebase",
+  "build": {
+    "frontendDist": "../dist"
+  },
+  "app": {
+    "windows": [
+      {
+        "title": "Su // 个人知识库",
+        "width": 1440,
+        "height": 900,
+        "minWidth": 920,
+        "minHeight": 640,
+        "resizable": true
+      }
+    ],
+    "security": { "csp": null }
+  },
+  "bundle": {
+    "active": true,
+    "targets": "nsis",
+    "windows": { "webviewInstallMode": { "type": "embedBootstrapper" } }
+  }
+}
