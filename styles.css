@@ -549,6 +549,7 @@ kbd {
 
 .category-row .category-item {
   flex: 1;
+  width: auto;
 }
 
 .category-delete {
