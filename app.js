@@ -109,6 +109,8 @@ const elements = {
   noteCategory: document.querySelector("#note-category"),
   noteTags: document.querySelector("#note-tags"),
   noteContent: document.querySelector("#note-content"),
+  noteImages: document.querySelector("#note-images"),
+  imagePreviewList: document.querySelector("#image-preview-list"),
   notePinned: document.querySelector("#note-pinned"),
   tagForm: document.querySelector("#tag-form"),
   tagInput: document.querySelector("#tag-input"),
@@ -125,8 +127,11 @@ const elements = {
   detailPinned: document.querySelector("#detail-pinned"),
   detailTags: document.querySelector("#detail-tags"),
   detailContent: document.querySelector("#detail-content"),
+  detailImages: document.querySelector("#detail-images"),
   importFile: document.querySelector("#import-file")
 };
+
+let composerImages = [];
 
 let saveFolderHandle = null;
 
@@ -600,6 +605,8 @@ function resetForm() {
   elements.noteId.value = "";
   elements.composerTitle.textContent = "记录一个想法";
   elements.noteCategory.value = "灵感";
+  composerImages = [];
+  renderImagePreviews();
 }
 
 function openComposer(note = null) {
@@ -610,6 +617,8 @@ function openComposer(note = null) {
     elements.noteCategory.value = note.category;
     elements.noteTags.value = note.tags.join(", ");
     elements.noteContent.value = note.content;
+    composerImages = Array.isArray(note.images) ? [...note.images] : [];
+    renderImagePreviews();
     elements.notePinned.checked = note.pinned;
   } else {
     resetForm();
@@ -629,7 +638,70 @@ function openDetail(note) {
   elements.detailPinned.hidden = !note.pinned;
   elements.detailTags.innerHTML = note.tags.map((tag) => `<span class="detail-tag">${escapeHTML(tag)}</span>`).join("");
   elements.detailContent.textContent = note.content;
+  const images = Array.isArray(note.images) ? note.images : [];
+  elements.detailImages.innerHTML = images.map((image) => `<img class="detail-image" src="${image.data}" alt="笔记图片">`).join("");
   openModal(elements.detailModal);
+}
+
+function saveSelectedNoteAsImage() {
+  const note = state.notes.find((item) => item.id === state.selectedNoteId);
+  if (!note) return;
+  const lines = note.content.split(/\r?\n/).flatMap((line) => {
+    const chars = [...line];
+    const chunks = [];
+    while (chars.length) chunks.push(chars.splice(0, 42).join("") || " ");
+    return chunks.length ? chunks : [" "];
+  });
+  const canvas = document.createElement("canvas");
+  canvas.width = 1400;
+  canvas.height = Math.max(760, 330 + lines.length * 36);
+  const ctx = canvas.getContext("2d");
+  ctx.fillStyle = "#060810";
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+  ctx.strokeStyle = "#4df3ff";
+  ctx.strokeRect(28, 28, canvas.width - 56, canvas.height - 56);
+  ctx.fillStyle = "#ff3dbb";
+  ctx.font = "bold 22px monospace";
+  ctx.fillText("SU // PERSONAL ARCHIVE", 76, 90);
+  ctx.fillStyle = "#e8f3ff";
+  ctx.font = "bold 44px sans-serif";
+  ctx.fillText(note.title.slice(0, 28), 76, 170);
+  ctx.fillStyle = "#4df3ff";
+  ctx.font = "20px sans-serif";
+  ctx.fillText(`${getCategory(note.category).label}   # ${note.tags.join("   # ")}`, 76, 220);
+  ctx.fillStyle = "#a9bad0";
+  ctx.font = "24px sans-serif";
+  lines.forEach((line, index) => ctx.fillText(line, 76, 290 + index * 36));
+  const link = document.createElement("a");
+  link.download = `${note.title.replace(/[\\/:*?"<>|]/g, "-").slice(0, 40) || "我的笔记"}.png`;
+  link.href = canvas.toDataURL("image/png");
+  link.click();
+}
+
+function renderImagePreviews() {
+  elements.imagePreviewList.innerHTML = composerImages.map((image, index) => `
+    <div class="image-preview-item">
+      <img src="${image.data}" alt="待保存图片">
+      <button type="button" data-image-remove="${index}" aria-label="移除图片">删</button>
+    </div>
+  `).join("");
+}
+
+function addNoteImages(event) {
+  const files = [...event.target.files];
+  files.forEach((file) => {
+    if (file.size > 5 * 1024 * 1024) {
+      window.alert(`图片“${file.name}”超过 5MB，已跳过。`);
+      return;
+    }
+    const reader = new FileReader();
+    reader.onload = () => {
+      composerImages.push({ name: file.name, type: file.type, data: reader.result });
+      renderImagePreviews();
+    };
+    reader.readAsDataURL(file);
+  });
+  event.target.value = "";
 }
 
 function submitNote(event) {
@@ -642,6 +714,7 @@ function submitNote(event) {
     category: elements.noteCategory.value,
     tags: splitTagList(elements.noteTags.value).slice(0, 8),
     content: elements.noteContent.value.trim(),
+    images: composerImages,
     pinned: elements.notePinned.checked,
     createdAt: existingId
       ? state.notes.find((item) => item.id === existingId)?.createdAt || now
@@ -771,9 +844,12 @@ function bindEvents() {
   elements.importFile.addEventListener("change", importNotes);
   document.querySelector("#choose-folder").addEventListener("click", chooseSaveFolder);
   elements.noteForm.addEventListener("submit", submitNote);
+  document.querySelector("#pick-note-images").addEventListener("click", () => elements.noteImages.click());
+  elements.noteImages.addEventListener("change", addNoteImages);
   elements.tagForm.addEventListener("submit", addCustomTag);
   elements.categoryForm.addEventListener("submit", addCustomCategory);
   document.querySelector("#delete-note").addEventListener("click", deleteSelectedNote);
+  document.querySelector("#save-note-image").addEventListener("click", saveSelectedNoteAsImage);
   document.querySelector("#edit-note").addEventListener("click", () => {
     const note = state.notes.find((item) => item.id === state.selectedNoteId);
     if (note) {
@@ -783,6 +859,12 @@ function bindEvents() {
   });
 
   document.addEventListener("click", (event) => {
+    const imageRemoveButton = event.target.closest("[data-image-remove]");
+    if (imageRemoveButton) {
+      composerImages.splice(Number(imageRemoveButton.dataset.imageRemove), 1);
+      renderImagePreviews();
+      return;
+    }
     const categoryButton = event.target.closest("[data-category]");
     if (categoryButton) {
       state.activeCategory = categoryButton.dataset.category;

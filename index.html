@@ -152,6 +152,12 @@
           <span>正文</span>
           <textarea id="note-content" rows="9" placeholder="写下当下的想法。不需要完美，真实就好。" required></textarea>
         </label>
+        <div class="image-field">
+          <div class="image-field-label"><span>图片</span><small>可选择图片并随笔记保存，单张最大 5MB</small></div>
+          <input id="note-images" type="file" accept="image/*" multiple hidden>
+          <button class="button button-quiet image-pick-button" id="pick-note-images" type="button">选择图片</button>
+          <div class="image-preview-list" id="image-preview-list"></div>
+        </div>
         <label class="pin-check">
           <input id="note-pinned" type="checkbox">
           <span class="fake-checkbox"></span>
@@ -183,8 +189,10 @@
       </div>
       <div class="detail-tags" id="detail-tags"></div>
       <div class="detail-content" id="detail-content"></div>
+      <div class="detail-images" id="detail-images"></div>
       <div class="detail-footer">
         <button class="text-button danger-button" id="delete-note" type="button">删除笔记</button>
+        <button class="button button-quiet" id="save-note-image" type="button">保存为图片</button>
         <button class="button button-primary" id="edit-note" type="button">编辑笔记</button>
       </div>
     </section>
