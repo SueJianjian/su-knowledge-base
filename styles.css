@@ -545,11 +545,13 @@ kbd {
   display: flex;
   align-items: center;
   gap: 4px;
+  min-width: 0;
 }
 
 .category-row .category-item {
   flex: 1;
   width: auto;
+  min-width: 0;
 }
 
 .category-delete {
@@ -577,6 +579,11 @@ kbd {
 
 .category-row:hover .category-action,
 .category-action:focus-visible {
+  opacity: 1;
+}
+
+.category-action,
+.category-delete {
   opacity: 1;
 }
 
